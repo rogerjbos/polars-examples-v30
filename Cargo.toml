@@ -1,0 +1,16 @@
+[package]
+name = "polars-examples-v30"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+reqwest = { version = "0.11.18", features = ["blocking"] }
+chrono = "0.4.24"
+connectorx = { version = "0.3.1", features = ["src_postgres", "dst_arrow2"]}
+polars-sql = "0.30.0"
+polars = { version = "0.30.0", features = ["lazy","temporal","describe","json","parquet","dtype-datetime","streaming","concat_str","list_eval","dtype-array","groupby_list","rank","dtype-struct"]}
+polars-io = { version = "0.30.0", features = ["avro"]}
+polars-lazy = { version = "0.30.0" } #, features = ["rank"]
+polars-core = { version = "0.30.0" } #, features = ["rank"]
+rand = "0.8.5"
