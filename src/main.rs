@@ -572,7 +572,9 @@ pub fn example_piped() {
 }
 
 pub fn example_sql() {
-    let source_conn = SourceConn::try_from("postgresql://postgres:jj1xq@192.168.86.68/tiingo?cxprotocol=binary").expect("parse conn str failed");
+    let pg = env::var("PG").unwrap();
+    let conn = String::from(format!("postgresql://postgres:{pg}@192.168.86.68/tiingo?cxprotocol=binary"));
+    let source_conn = SourceConn::try_from(&*conn).expect("parse conn str failed");
     
     let queries = &[CXQuery::from("SELECT * FROM price_history_old limit 10")];
     
