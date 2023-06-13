@@ -55,9 +55,91 @@ fn main() {
     example_concat_str();
     example_groupby_apply();
     example_combining_multiple_col_values();
+    example_datetime_iter();
+    example_date_math();
+    example_datetime();
+    example_date_conversion();
+
     // example_flatten_not_working();
     // example_filtered_fold_not_working();
    
+}
+
+pub fn example_date_conversion() {
+    let df = DataFrame::new(vec![Series::new(
+        "date_str",
+        &[
+            "5. Oct, ...2022",
+            "..31 ..Oct.., 2022.",
+            "E.R.R.O.R",
+            "31 Sep, 2022",
+        ],
+    )])
+    .unwrap()
+    .lazy();
+
+    let df = df.with_column(
+        col("date_str")
+            .str()
+            .replace_all(lit("."), lit(""), true)
+            .str()
+            .strptime(DataType::Date, StrptimeOptions {
+                format: Some("%d %b, %Y".into()),
+                strict: false,
+                exact: true,
+                cache: true,
+            })
+            .alias("date"),
+    );
+
+    println!("{:?}", df.collect().unwrap());
+}
+
+pub fn example_datetime() {
+    let days = df!("column_1" => &["Tuesday"],
+    "column_2" => &["1900-01-02"]);
+    println!("{:?}", days.unwrap());
+
+    let options = StrptimeOptions {
+        format: Some("%m-%d-%Y".into()),
+        ..Default::default()
+    };
+
+    let my_expr = col("column_2").str().strptime(DataType::Date, options);
+    println!("my_expr: {:?}", my_expr);
+
+}
+
+pub fn example_date_math() {
+    let df = df! {
+        "a" => ["2022-11-21T12:00:00"],
+        "b" => ["2022-11-21T14:00:00"]
+      }
+      .unwrap()
+      .lazy()
+      .with_column(
+          col("a")
+              .str()
+              .strptime(DataType::Datetime(TimeUnit::Milliseconds, None), StrptimeOptions {
+                  format: Some("%Y-%m-%dT%H:%M:%S".into()),
+                  ..Default::default()
+                })
+              .alias("a"),
+      )
+      .with_column(
+          col("b")
+              .str()
+              .strptime(DataType::Datetime(TimeUnit::Milliseconds, None), StrptimeOptions {
+                  format: Some("%Y-%m-%dT%H:%M:%S".into()),
+                  ..Default::default()
+                })
+              .alias("b"),
+      )
+      .with_column((col("b") - col("a")).alias("duration"))
+      .collect()
+      .unwrap();
+  
+      println!("{:?}", df);
 }
 
 pub fn example_combining_multiple_col_values() {
@@ -204,6 +286,42 @@ pub fn example_concat_str() {
 //         .collect();
 //     println!("filtered fold: {:?}", out);
 // }
+
+pub fn example_datetime_iter() {
+    let df: DataFrame = df!(
+        "date" => &[
+                    NaiveDate::from_ymd_opt(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(),
+                    NaiveDate::from_ymd_opt(2022, 1, 2).unwrap().and_hms_opt(0, 0, 0).unwrap(),
+                    NaiveDate::from_ymd_opt(2022, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap(),
+                    NaiveDate::from_ymd_opt(2022, 1, 4).unwrap().and_hms_opt(0, 0, 0).unwrap(),
+                    NaiveDate::from_ymd_opt(2022, 1, 5).unwrap().and_hms_opt(0, 0, 0).unwrap()
+        ],
+        "price" => &[4.0, 5.0, 6.0, 7.0, 8.0]
+        ).unwrap();
+    println!("df: {}", df);
+
+    let new = df
+    .lazy()
+    .with_column(
+        col("date")
+            .map(
+                |s| {
+                    Ok(Some(
+                        s.datetime()
+                            .expect("series must contain datetimes")
+                            .as_datetime_iter()
+                            .map(|d| d.map(|d| d.num_days_from_ce()))
+                            .collect(),
+                    ))
+                },
+                GetOutput::from_type(DataType::Int32),
+            )
+            .alias("new_column"),
+    )
+    .collect()
+    .unwrap();
+    println!("new: {}", new);
+}
 
 pub fn example_fold() {
     let df = df!(
